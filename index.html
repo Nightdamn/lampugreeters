@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#000000">
+  <title>Lampu Check-In</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #000;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .scanner-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 20px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    #reader {
+      width: 100%;
+      border-radius: 16px;
+    }
+
+    .scanner-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 250px;
+      height: 250px;
+      border: 3px solid #00ff00;
+      border-radius: 16px;
+      pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    }
+
+    .info-card {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 2px solid #333;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .info-label {
+      color: #888;
+      font-weight: 500;
+    }
+
+    .info-value {
+      color: #fff;
+      font-weight: 600;
+      text-align: right;
+      max-width: 60%;
+      word-break: break-word;
+    }
+
+    .info-value.empty {
+      color: #444;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 18px;
+      font-size: 18px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #2a2a2a;
+      color: #fff;
+      border: 2px solid #444;
+    }
+
+    .btn-secondary:active {
+      transform: scale(0.98);
+      background: #333;
+    }
+
+    .success-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .success-modal.show {
+      display: flex;
+    }
+
+    .success-content {
+      background: #1a1a1a;
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-align: center;
+      max-width: 400px;
+      border: 3px solid #00ff00;
+    }
+
+    .success-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+
+    .success-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .success-message {
+      font-size: 18px;
+      color: #888;
+      margin-bottom: 30px;
+    }
+
+    .error-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .error-modal.show {
+      display: flex;
+    }
+
+    .error-content {
+      background: #1a1a1a;
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-align: center;
+      max-width: 400px;
+      border: 3px solid #ff3333;
+    }
+
+    .error-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+
+    .error-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 30px;
+      color: #ff3333;
+    }
+
+    .status-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #1a1a1a;
+      padding: 15px 20px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 100;
+      border-bottom: 2px solid #333;
+    }
+
+    .status-online {
+      color: #00ff00;
+    }
+
+    .status-offline {
+      color: #ff3333;
+    }
+
+    .main-content {
+      margin-top: 60px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #888;
+    }
+
+    .stats-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .stats-screen.show {
+      display: flex;
+    }
+
+    .stats-header {
+      padding: 80px 20px 20px;
+      text-align: center;
+      border-bottom: 2px solid #333;
+    }
+
+    .stats-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .stats-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .stats-total {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .stats-total-label {
+      font-size: 18px;
+      font-weight: 600;
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+
+    .stats-total-value {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .stats-separator {
+      height: 2px;
+      background: #333;
+      margin: 20px 0;
+    }
+
+    .stats-camps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stats-camp-row {
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stats-camp-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .stats-camp-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #667eea;
+      letter-spacing: 1px;
+    }
+
+    .stats-footer {
+      padding: 20px;
+      border-top: 2px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="status-bar">
+    <span id="statusIndicator" class="status-online">● Online</span>
+  </div>
+
+  <div class="container">
+    <div class="main-content">
+      <div class="scanner-container">
+        <div id="reader"></div>
+        <div class="scanner-frame"></div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-row">
+          <span class="info-label">Camp:</span>
+          <span id="campInfo" class="info-value empty">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Code:</span>
+          <span id="codeInfo" class="info-value empty">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Name:</span>
+          <span id="nameInfo" class="info-value empty">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Entry ID:</span>
+          <span id="entryIdInfo" class="info-value empty">—</span>
+        </div>
+      </div>
+
+      <button id="welcomeBtn" class="btn btn-primary" disabled>Welcome Home</button>
+      <button id="statsBtn" class="btn btn-secondary">📊 Статистика входа</button>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="successModal" class="success-modal">
+    <div class="success-content">
+      <div class="success-icon">🎉</div>
+      <div class="success-title">Welcome Home!</div>
+      <div class="success-message">Участник успешно зарегистрирован</div>
+      <button id="nextBtn" class="btn btn-primary">Следующий участник</button>
+    </div>
+  </div>
+
+  <!-- Error Modal -->
+  <div id="errorModal" class="error-modal">
+    <div class="error-content">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title" id="errorMessage">Этот QR уже был использован для входа</div>
+      <button id="errorOkBtn" class="btn btn-secondary">OK</button>
+    </div>
+  </div>
+
+  <!-- Statistics Screen -->
+  <div id="statsScreen" class="stats-screen">
+    <div class="stats-header">
+      <h1>📊 Статистика входа</h1>
+    </div>
+    
+    <div class="stats-content">
+      <div class="stats-total">
+        <div class="stats-total-label">TOTAL:</div>
+        <div id="statsTotal" class="stats-total-value">0/0</div>
+      </div>
+      
+      <div class="stats-separator"></div>
+      
+      <div id="statsCamps" class="stats-camps">
+        <div class="loading">Загрузка...</div>
+      </div>
+    </div>
+    
+    <div class="stats-footer">
+      <button id="statsBackBtn" class="btn btn-secondary">← Вернуться</button>
+    </div>
+  </div>
+
+  <!-- html5-qrcode library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  
+  <script>
+    // Configuration - NO SECRETS HERE!
+    // All API requests go through /api/* which uses server-side secrets
+
+    let html5QrCode;
+    let currentQuota = null;
+    let isScanning = true;
+
+    // DOM elements
+    const campInfo = document.getElementById('campInfo');
+    const codeInfo = document.getElementById('codeInfo');
+    const nameInfo = document.getElementById('nameInfo');
+    const entryIdInfo = document.getElementById('entryIdInfo');
+    const welcomeBtn = document.getElementById('welcomeBtn');
+    const successModal = document.getElementById('successModal');
+    const errorModal = document.getElementById('errorModal');
+    const errorMessage = document.getElementById('errorMessage');
+    const nextBtn = document.getElementById('nextBtn');
+    const errorOkBtn = document.getElementById('errorOkBtn');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const statsBtn = document.getElementById('statsBtn');
+    const statsScreen = document.getElementById('statsScreen');
+    const statsBackBtn = document.getElementById('statsBackBtn');
+    const statsTotal = document.getElementById('statsTotal');
+    const statsCamps = document.getElementById('statsCamps');
+
+    // Initialize scanner
+    function initScanner() {
+      html5QrCode = new Html5Qrcode("reader");
+      
+      html5QrCode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        onScanError
+      ).catch(err => {
+        console.error("Scanner init error:", err);
+        alert("Не удалось запустить камеру. Проверьте разрешения.");
+      });
+    }
+
+    async function onScanSuccess(decodedText, decodedResult) {
+      if (!isScanning) return;
+      
+      console.log("QR scanned:", decodedText);
+      isScanning = false;
+      
+      // Stop scanner temporarily
+      html5QrCode.pause();
+      
+      // Parse QR code (format: https://... or just Entry ID)
+      let entryId = decodedText;
+      
+      // If it's a URL, extract Entry ID from it
+      if (decodedText.startsWith('http')) {
+        const url = new URL(decodedText);
+        entryId = url.searchParams.get('id') || url.pathname.split('/').pop();
+      }
+      
+      // Fetch quota info
+      await fetchQuotaInfo(entryId);
+    }
+
+    function onScanError(errorMessage) {
+      // Ignore scan errors (happens frequently)
+    }
+
+    async function fetchQuotaInfo(entryId) {
+      try {
+        const response = await fetch(`/api/quota/${entryId}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch quota');
+        }
+
+        const data = await response.json();
+        
+        if (data.length === 0) {
+          showError('Квота не найдена');
+          resetScanner();
+          return;
+        }
+
+        currentQuota = data[0];
+        
+        // Check if already checked in
+        if (currentQuota.STATUS === 'CheckIn') {
+          showError('Этот QR уже был использован для входа');
+          resetScanner();
+          return;
+        }
+
+        // Display info
+        displayQuotaInfo(currentQuota);
+        
+      } catch (error) {
+        console.error('Error fetching quota:', error);
+        showError('Ошибка загрузки данных');
+        resetScanner();
+      }
+    }
+
+    function displayQuotaInfo(quota) {
+      campInfo.textContent = `${quota.CAMP || '—'}`;
+      campInfo.classList.remove('empty');
+      
+      codeInfo.textContent = quota.CODE || '—';
+      codeInfo.classList.remove('empty');
+      
+      nameInfo.textContent = quota.NAME || '—';
+      nameInfo.classList.remove('empty');
+      
+      entryIdInfo.textContent = quota.USER_ID || '—';
+      entryIdInfo.classList.remove('empty');
+      
+      welcomeBtn.disabled = false;
+    }
+
+    function clearQuotaInfo() {
+      campInfo.textContent = '—';
+      campInfo.classList.add('empty');
+      
+      codeInfo.textContent = '—';
+      codeInfo.classList.add('empty');
+      
+      nameInfo.textContent = '—';
+      nameInfo.classList.add('empty');
+      
+      entryIdInfo.textContent = '—';
+      entryIdInfo.classList.add('empty');
+      
+      welcomeBtn.disabled = true;
+      currentQuota = null;
+    }
+
+    async function checkIn() {
+      if (!currentQuota) return;
+      
+      welcomeBtn.disabled = true;
+      welcomeBtn.textContent = 'Обработка...';
+      
+      try {
+        const response = await fetch(`/api/checkin/${currentQuota.CODE}`, {
+          method: 'PATCH'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update status');
+        }
+
+        showSuccess();
+        
+      } catch (error) {
+        console.error('Error checking in:', error);
+        showError('Ошибка регистрации');
+        welcomeBtn.disabled = false;
+        welcomeBtn.textContent = 'Welcome Home';
+      }
+    }
+
+    function showSuccess() {
+      successModal.classList.add('show');
+    }
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorModal.classList.add('show');
+    }
+
+    function hideSuccess() {
+      successModal.classList.remove('show');
+      resetScanner();
+    }
+
+    function hideError() {
+      errorModal.classList.remove('show');
+    }
+
+    function resetScanner() {
+      clearQuotaInfo();
+      welcomeBtn.textContent = 'Welcome Home';
+      isScanning = true;
+      html5QrCode.resume();
+    }
+
+    async function loadStatistics() {
+      try {
+        statsCamps.innerHTML = '<div class="loading">Загрузка...</div>';
+        
+        // Fetch all quotas through API
+        const response = await fetch('/api/stats');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch statistics');
+        }
+
+        const quotas = await response.json();
+        
+        // Calculate statistics
+        const stats = {};
+        let totalQuotas = 0;
+        let totalCheckedIn = 0;
+        
+        quotas.forEach(quota => {
+          const camp = quota.CAMP || 'Unknown';
+          const isCheckedIn = quota.STATUS === 'CheckIn';
+          
+          if (!stats[camp]) {
+            stats[camp] = { total: 0, checkedIn: 0 };
+          }
+          
+          stats[camp].total++;
+          if (isCheckedIn) {
+            stats[camp].checkedIn++;
+          }
+          
+          totalQuotas++;
+          if (isCheckedIn) {
+            totalCheckedIn++;
+          }
+        });
+        
+        // Display total
+        statsTotal.textContent = `${totalCheckedIn}/${totalQuotas}`;
+        
+        // Display camps
+        statsCamps.innerHTML = '';
+        
+        // Sort camps by name
+        const sortedCamps = Object.keys(stats).sort();
+        
+        if (sortedCamps.length === 0) {
+          statsCamps.innerHTML = '<div class="loading">Нет данных</div>';
+          return;
+        }
+        
+        sortedCamps.forEach(camp => {
+          const campStats = stats[camp];
+          const row = document.createElement('div');
+          row.className = 'stats-camp-row';
+          
+          const nameEl = document.createElement('div');
+          nameEl.className = 'stats-camp-name';
+          nameEl.textContent = camp;
+          
+          const valueEl = document.createElement('div');
+          valueEl.className = 'stats-camp-value';
+          valueEl.textContent = `${campStats.checkedIn}/${campStats.total}`;
+          
+          row.appendChild(nameEl);
+          row.appendChild(valueEl);
+          statsCamps.appendChild(row);
+        });
+        
+      } catch (error) {
+        console.error('Error loading statistics:', error);
+        statsCamps.innerHTML = '<div class="loading">Ошибка загрузки</div>';
+      }
+    }
+
+    function showStats() {
+      statsScreen.classList.add('show');
+      html5QrCode.pause();
+      loadStatistics();
+    }
+
+    function hideStats() {
+      statsScreen.classList.remove('show');
+      html5QrCode.resume();
+    }
+
+    // Event listeners
+    welcomeBtn.addEventListener('click', checkIn);
+    nextBtn.addEventListener('click', hideSuccess);
+    errorOkBtn.addEventListener('click', hideError);
+    statsBtn.addEventListener('click', showStats);
+    statsBackBtn.addEventListener('click', hideStats);
+
+    // Online/Offline status
+    function updateOnlineStatus() {
+      if (navigator.onLine) {
+        statusIndicator.textContent = '● Online';
+        statusIndicator.className = 'status-online';
+      } else {
+        statusIndicator.textContent = '● Offline';
+        statusIndicator.className = 'status-offline';
+      }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    // Initialize
+    window.addEventListener('load', () => {
+      updateOnlineStatus();
+      initScanner();
+    });
+
+    // Service Worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        console.log('Service Worker registered');
+      }).catch(err => {
+        console.log('Service Worker registration failed:', err);
+      });
+    }
+  </script>
+</body>
+</html>
