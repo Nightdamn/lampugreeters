@@ -475,7 +475,9 @@
     async function onScanSuccess(decodedText, decodedResult) {
       if (!isScanning) return;
       
-      console.log("QR scanned:", decodedText);
+      console.log("=== QR CODE SCANNED ===");
+      console.log("Raw QR data:", decodedText);
+      
       isScanning = false;
       
       // Stop scanner temporarily
@@ -486,9 +488,18 @@
       
       // If it's a URL, extract Entry ID from it
       if (decodedText.startsWith('http')) {
-        const url = new URL(decodedText);
-        entryId = url.searchParams.get('id') || url.pathname.split('/').pop();
+        try {
+          const url = new URL(decodedText);
+          entryId = url.searchParams.get('id') || url.pathname.split('/').pop();
+          console.log("Extracted from URL, id param:", url.searchParams.get('id'));
+          console.log("Extracted from URL, last path:", url.pathname.split('/').pop());
+        } catch (e) {
+          console.error("URL parse error:", e);
+        }
       }
+      
+      console.log("Final Entry ID:", entryId);
+      console.log("======================");
       
       // Fetch quota info
       await fetchQuotaInfo(entryId);
