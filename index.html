@@ -582,6 +582,7 @@
 
     // Store all quotas for quick access
     let allQuotas = [];
+    let campIcons = {};
 
     // Initialize scanner
     function initScanner() {
@@ -769,14 +770,22 @@
       try {
         statsCamps.innerHTML = '<div class="loading">Загрузка...</div>';
         
-        // Fetch all quotas through API
-        const response = await fetch('/api/stats');
+        // Fetch camp icons and quotas in parallel
+        const [iconsResponse, quotasResponse] = await Promise.all([
+          fetch('/api/camp-icons'),
+          fetch('/api/stats')
+        ]);
 
-        if (!response.ok) {
+        if (!quotasResponse.ok) {
           throw new Error('Failed to fetch statistics');
         }
 
-        const quotas = await response.json();
+        // Load icons (optional, won't fail if SUMMARY table doesn't exist)
+        if (iconsResponse.ok) {
+          campIcons = await iconsResponse.json();
+        }
+
+        const quotas = await quotasResponse.json();
         
         // Store for quick access
         allQuotas = quotas;
@@ -835,7 +844,9 @@
           
           const nameEl = document.createElement('div');
           nameEl.className = 'stats-camp-name';
-          nameEl.textContent = camp;
+          // Add icon emoji before camp name
+          const icon = campIcons[camp] || '';
+          nameEl.textContent = icon ? `${icon} ${camp}` : camp;
           
           const valueEl = document.createElement('div');
           valueEl.className = 'stats-camp-value';

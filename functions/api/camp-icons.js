@@ -1,5 +1,5 @@
-// GET /api/stats
-// Uses SUPABASE_SERVICE_KEY to bypass RLS (server-side only)
+// GET /api/camp-icons
+// Returns camp names and their emoji icons from SUMMARY table
 export async function onRequestGet(context) {
   const { env } = context;
 
@@ -9,14 +9,11 @@ export async function onRequestGet(context) {
   };
 
   try {
-    // Use SERVICE_KEY (bypasses RLS) - only available server-side
     const serviceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
     
     if (!env.SUPABASE_URL || !serviceKey) {
       return new Response(JSON.stringify({ 
-        error: 'Configuration error',
-        hasUrl: !!env.SUPABASE_URL,
-        hasKey: !!serviceKey
+        error: 'Configuration error'
       }), {
         status: 500,
         headers: corsHeaders
@@ -24,7 +21,7 @@ export async function onRequestGet(context) {
     }
 
     const response = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/QUOTAS?select=CAMP,STATUS,NAME,USER_ID,CODE`,
+      `${env.SUPABASE_URL}/rest/v1/SUMMARY?select=CAMP,ICON`,
       {
         headers: {
           'apikey': serviceKey,
@@ -35,7 +32,15 @@ export async function onRequestGet(context) {
 
     const data = await response.json();
     
-    return new Response(JSON.stringify(data), {
+    // Convert to object for easy lookup: { "Central Camp": "🔥", ... }
+    const icons = {};
+    data.forEach(item => {
+      if (item.CAMP && item.ICON) {
+        icons[item.CAMP] = item.ICON;
+      }
+    });
+    
+    return new Response(JSON.stringify(icons), {
       status: response.status,
       headers: corsHeaders
     });
