@@ -1,4 +1,5 @@
 // GET /api/stats
+// Uses SUPABASE_SERVICE_KEY to bypass RLS (server-side only)
 export async function onRequestGet(context) {
   const { env } = context;
 
@@ -8,11 +9,14 @@ export async function onRequestGet(context) {
   };
 
   try {
-    if (!env.SUPABASE_URL || !env.SUPABASE_KEY) {
+    // Use SERVICE_KEY (bypasses RLS) - only available server-side
+    const serviceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
+    
+    if (!env.SUPABASE_URL || !serviceKey) {
       return new Response(JSON.stringify({ 
         error: 'Configuration error',
         hasUrl: !!env.SUPABASE_URL,
-        hasKey: !!env.SUPABASE_KEY
+        hasKey: !!serviceKey
       }), {
         status: 500,
         headers: corsHeaders
@@ -23,8 +27,8 @@ export async function onRequestGet(context) {
       `${env.SUPABASE_URL}/rest/v1/QUOTAS?select=CAMP,STATUS`,
       {
         headers: {
-          'apikey': env.SUPABASE_KEY,
-          'Authorization': `Bearer ${env.SUPABASE_KEY}`
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`
         }
       }
     );

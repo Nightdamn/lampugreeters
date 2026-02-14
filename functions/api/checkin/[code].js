@@ -1,4 +1,5 @@
 // PATCH /api/checkin/[code]
+// Uses SUPABASE_SERVICE_KEY to bypass RLS (server-side only)
 export async function onRequestPatch(context) {
   const { params, env } = context;
 
@@ -16,7 +17,10 @@ export async function onRequestPatch(context) {
       });
     }
 
-    if (!env.SUPABASE_URL || !env.SUPABASE_KEY) {
+    // Use SERVICE_KEY (bypasses RLS) - only available server-side
+    const serviceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY;
+
+    if (!env.SUPABASE_URL || !serviceKey) {
       return new Response(JSON.stringify({ 
         error: 'Configuration error' 
       }), {
@@ -30,8 +34,8 @@ export async function onRequestPatch(context) {
       {
         method: 'PATCH',
         headers: {
-          'apikey': env.SUPABASE_KEY,
-          'Authorization': `Bearer ${env.SUPABASE_KEY}`,
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
           'Content-Type': 'application/json',
           'Prefer': 'return=minimal'
         },

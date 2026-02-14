@@ -475,20 +475,40 @@
     async function onScanSuccess(decodedText, decodedResult) {
       if (!isScanning) return;
       
-      console.log("QR scanned:", decodedText);
+      console.log("=== QR CODE SCANNED ===");
+      console.log("Raw QR data:", decodedText);
+      
       isScanning = false;
       
       // Stop scanner temporarily
       html5QrCode.pause();
       
-      // Parse QR code (format: https://... or just Entry ID)
       let entryId = decodedText;
       
-      // If it's a URL, extract Entry ID from it
-      if (decodedText.startsWith('http')) {
-        const url = new URL(decodedText);
-        entryId = url.searchParams.get('id') || url.pathname.split('/').pop();
+      // Try to parse as JSON (if QR contains full quota object)
+      try {
+        const parsed = JSON.parse(decodedText);
+        if (parsed.USER_ID) {
+          entryId = parsed.USER_ID;
+          console.log("Parsed JSON, extracted USER_ID:", entryId);
+        }
+      } catch (e) {
+        // Not JSON, continue with original logic
+        
+        // If it's a URL, extract Entry ID from it
+        if (decodedText.startsWith('http')) {
+          try {
+            const url = new URL(decodedText);
+            entryId = url.searchParams.get('id') || url.pathname.split('/').pop();
+            console.log("Extracted from URL:", entryId);
+          } catch (urlError) {
+            console.error("URL parse error:", urlError);
+          }
+        }
       }
+      
+      console.log("Final Entry ID:", entryId);
+      console.log("======================");
       
       // Fetch quota info
       await fetchQuotaInfo(entryId);
