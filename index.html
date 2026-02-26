@@ -280,48 +280,49 @@
     }
 
     .stats-header {
-      padding: 80px 20px 20px;
+      padding: 80px 20px 16px;
       text-align: center;
       border-bottom: 2px solid #333;
+      background: #000;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     .stats-header h1 {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
-      margin: 0;
+      margin: 0 0 12px 0;
+    }
+
+    .stats-total-compact {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 10px 20px;
+      margin: 0 auto;
+      max-width: 200px;
+    }
+
+    .stats-total-compact .stats-total-label {
+      font-size: 16px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .stats-total-compact .stats-total-value {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
     }
 
     .stats-content {
       flex: 1;
       overflow-y: auto;
       padding: 20px;
-    }
-
-    .stats-total {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 16px;
-      padding: 30px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .stats-total-label {
-      font-size: 18px;
-      font-weight: 600;
-      opacity: 0.9;
-      margin-bottom: 10px;
-    }
-
-    .stats-total-value {
-      font-size: 48px;
-      font-weight: 700;
-      letter-spacing: 2px;
-    }
-
-    .stats-separator {
-      height: 2px;
-      background: #333;
-      margin: 20px 0;
     }
 
     .stats-camps {
@@ -467,16 +468,18 @@
     }
 
     .stats-footer {
-      padding: 20px;
+      padding: 16px 20px;
       border-top: 2px solid #333;
       display: flex;
+      justify-content: space-between;
       gap: 12px;
-      flex-wrap: wrap;
+      background: #000;
     }
 
-    .stats-footer button {
-      flex: 1;
-      min-width: 140px;
+    .btn-compact {
+      padding: 10px 20px;
+      font-size: 14px;
+      min-width: auto;
     }
   </style>
 </head>
@@ -539,24 +542,21 @@
   <div id="statsScreen" class="stats-screen">
     <div class="stats-header">
       <h1>📊 Статистика входа</h1>
+      <div class="stats-total-compact">
+        <span class="stats-total-label">TOTAL:</span>
+        <span id="statsTotal" class="stats-total-value">0/0</span>
+      </div>
     </div>
     
     <div class="stats-content">
-      <div class="stats-total">
-        <div class="stats-total-label">TOTAL:</div>
-        <div id="statsTotal" class="stats-total-value">0/0</div>
-      </div>
-      
-      <div class="stats-separator"></div>
-      
       <div id="statsCamps" class="stats-camps">
         <div class="loading">Загрузка...</div>
       </div>
     </div>
     
     <div class="stats-footer">
-      <button id="exportBtn" class="btn">📥 Выгрузка Excel</button>
-      <button id="statsBackBtn" class="btn btn-secondary">← Вернуться</button>
+      <button id="statsBackBtn" class="btn btn-secondary btn-compact">← Вернуться</button>
+      <button id="exportBtn" class="btn btn-compact">📥 Выгрузка</button>
     </div>
   </div>
 
@@ -1088,13 +1088,13 @@
         XLSX.writeFile(wb, filename);
         
         exportBtn.disabled = false;
-        exportBtn.textContent = '📥 Выгрузка Excel';
+        exportBtn.textContent = '📥 Выгрузка';
         
       } catch (error) {
         console.error('Export error:', error);
         alert('Ошибка при создании файла');
         exportBtn.disabled = false;
-        exportBtn.textContent = '📥 Выгрузка Excel';
+        exportBtn.textContent = '📥 Выгрузка';
       }
     }
 
