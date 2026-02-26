@@ -469,6 +469,14 @@
     .stats-footer {
       padding: 20px;
       border-top: 2px solid #333;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stats-footer button {
+      flex: 1;
+      min-width: 140px;
     }
   </style>
 </head>
@@ -547,9 +555,13 @@
     </div>
     
     <div class="stats-footer">
+      <button id="exportBtn" class="btn">📥 Выгрузка Excel</button>
       <button id="statsBackBtn" class="btn btn-secondary">← Вернуться</button>
     </div>
   </div>
+
+  <!-- SheetJS library for Excel export -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
   <!-- html5-qrcode library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -579,6 +591,7 @@
     const statsBackBtn = document.getElementById('statsBackBtn');
     const statsTotal = document.getElementById('statsTotal');
     const statsCamps = document.getElementById('statsCamps');
+    const exportBtn = document.getElementById('exportBtn');
 
     // Store all quotas for quick access
     let allQuotas = [];
@@ -985,12 +998,113 @@
       }
     }
 
+    async function exportToExcel() {
+      try {
+        exportBtn.disabled = true;
+        exportBtn.textContent = 'Создание файла...';
+        
+        // Filter quotas: only Paid and CheckIn
+        const paidAndCheckedIn = allQuotas.filter(q => 
+          q.STATUS === 'Paid' || q.STATUS === 'CheckIn'
+        );
+        
+        if (paidAndCheckedIn.length === 0) {
+          alert('Нет данных для экспорта');
+          return;
+        }
+        
+        // Group by camp
+        const campGroups = {};
+        paidAndCheckedIn.forEach(quota => {
+          const camp = quota.CAMP || 'Unknown';
+          if (!campGroups[camp]) {
+            campGroups[camp] = [];
+          }
+          campGroups[camp].push(quota);
+        });
+        
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Sort camps alphabetically
+        const sortedCamps = Object.keys(campGroups).sort();
+        
+        sortedCamps.forEach(camp => {
+          // Sort participants by NAME alphabetically
+          const participants = campGroups[camp].sort((a, b) => {
+            const nameA = (a.NAME || '').toLowerCase();
+            const nameB = (b.NAME || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+          
+          // Prepare data for sheet
+          const sheetData = [
+            ['Name', 'Entry ID', 'Camp', 'Status', 'Code']
+          ];
+          
+          participants.forEach(p => {
+            sheetData.push([
+              p.NAME || '',
+              p.USER_ID || '',
+              p.CAMP || '',
+              p.STATUS || '',
+              p.CODE || ''
+            ]);
+          });
+          
+          // Create worksheet
+          const ws = XLSX.utils.aoa_to_sheet(sheetData);
+          
+          // Set column widths
+          ws['!cols'] = [
+            { wch: 25 }, // Name
+            { wch: 15 }, // Entry ID
+            { wch: 20 }, // Camp
+            { wch: 10 }, // Status
+            { wch: 15 }  // Code
+          ];
+          
+          // Clean camp name for sheet name (max 31 chars, no special chars)
+          let sheetName = camp
+            .replace(/[:\\/?*\[\]]/g, '')
+            .substring(0, 31);
+          
+          // Add icon emoji if available
+          const icon = campIcons[camp];
+          if (icon) {
+            sheetName = `${icon} ${sheetName}`.substring(0, 31);
+          }
+          
+          // Add worksheet to workbook
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        });
+        
+        // Generate filename with current date
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        const filename = `Lampu_CheckIn_${dateStr}.xlsx`;
+        
+        // Download file
+        XLSX.writeFile(wb, filename);
+        
+        exportBtn.disabled = false;
+        exportBtn.textContent = '📥 Выгрузка Excel';
+        
+      } catch (error) {
+        console.error('Export error:', error);
+        alert('Ошибка при создании файла');
+        exportBtn.disabled = false;
+        exportBtn.textContent = '📥 Выгрузка Excel';
+      }
+    }
+
     // Event listeners
     welcomeBtn.addEventListener('click', checkIn);
     nextBtn.addEventListener('click', hideSuccess);
     errorOkBtn.addEventListener('click', hideError);
     statsBtn.addEventListener('click', showStats);
     statsBackBtn.addEventListener('click', hideStats);
+    exportBtn.addEventListener('click', exportToExcel);
 
     // Online/Offline status
     function updateOnlineStatus() {
